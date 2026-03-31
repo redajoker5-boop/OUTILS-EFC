@@ -1,2 +1,664 @@
-# OUTILS-EFC
-FREINS ET LEVIERS
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matrice Outils / Freins EFC v3</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #fff; color: #1a1a1a; padding: 2rem; }
+h1 { font-size: 18px; font-weight: 600; margin-bottom: 0.25rem; }
+.subtitle { font-size: 13px; color: #666; margin-bottom: 1.5rem; }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 1rem; align-items: center; }
+.filter-label { font-size: 12px; color: #666; }
+.filter-btn { padding: 5px 12px; font-size: 12px; border: 0.5px solid #ccc; border-radius: 20px; background: #fff; color: #555; cursor: pointer; transition: all 0.15s; }
+.filter-btn:hover { background: #f5f5f5; }
+.filter-btn.active { color: white; border-color: transparent; }
+.filter-btn[data-cat="all"].active { background: #444; }
+.filter-btn[data-cat="eco"].active { background: #185FA5; }
+.filter-btn[data-cat="org"].active { background: #533AB7; }
+.filter-btn[data-cat="info"].active { background: #D4537E; }
+.filter-btn[data-cat="mar"].active { background: #BA7517; }
+.filter-btn[data-cat="jur"].active { background: #A32D2D; }
+.filter-btn[data-cat="tec"].active { background: #0F6E56; }
+.filter-btn[data-cat="str"].active { background: #5F5E5A; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 1rem; font-size: 12px; align-items: center; color: #666; }
+.legend-item { display: flex; align-items: center; gap: 5px; }
+.legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+.hint { font-size: 11px; color: #999; margin-left: 8px; }
+.table-wrap { overflow-x: auto; border-radius: 10px; border: 0.5px solid #ddd; }
+table { width: 100%; border-collapse: collapse; min-width: 1600px; }
+thead th { font-size: 10px; font-weight: 500; padding: 8px 5px; text-align: center; vertical-align: bottom; background: #f7f7f7; border-bottom: 0.5px solid #ddd; border-right: 0.5px solid #ddd; color: #555; line-height: 1.3; cursor: pointer; }
+thead th:first-child { text-align: left; min-width: 230px; font-size: 11px; cursor: default; }
+thead th.tool-header { min-width: 58px; max-width: 70px; }
+thead th:hover:not(:first-child) { background: #eef; color: #333; }
+thead th.highlighted { background: #d4f0e5; color: #0F6E56; }
+tbody tr { border-bottom: 0.5px solid #eee; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr.hidden { display: none; }
+tbody tr:hover td { background: #fafafa; }
+td { padding: 7px 5px; font-size: 11px; border-right: 0.5px solid #eee; vertical-align: middle; }
+td:last-child { border-right: none; }
+.frein-cell { font-size: 11px; color: #1a1a1a; line-height: 1.4; padding: 7px 10px; }
+.cat-badge { display: inline-block; font-size: 9px; padding: 2px 6px; border-radius: 10px; margin-bottom: 3px; font-weight: 500; }
+.dot-cell { text-align: center; }
+.dot { width: 13px; height: 13px; border-radius: 50%; display: inline-block; cursor: pointer; transition: transform 0.1s; }
+.dot:hover { transform: scale(1.4); }
+.dot.p { background: #1D9E75; }
+.dot.s { background: #85B7EB; }
+.empty { width: 5px; height: 5px; border-radius: 50%; background: #ddd; display: inline-block; }
+.summary { font-size: 12px; color: #888; margin-top: 0.75rem; }
+
+/* Tooltip styles */
+.tooltip {
+  position: fixed;
+  background: #fff;
+  border: 0.5px solid #ccc;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 12px;
+  max-width: 320px;
+  z-index: 999;
+  pointer-events: none;
+  display: none;
+  line-height: 1.5;
+  color: #1a1a1a;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+}
+.tooltip-title {
+  font-size: 13px;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 6px;
+  color: #1a1a1a;
+}
+.tooltip-desc {
+  font-size: 11px;
+  color: #444;
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+.tooltip-role {
+  font-size: 11px;
+  color: #888;
+  display: block;
+  margin-top: 6px;
+  font-style: normal;
+}
+.tooltip-meta {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+  border-top: 0.5px solid #eee;
+  padding-top: 8px;
+}
+.tooltip-scale {
+  flex: 1;
+}
+.tooltip-scale-label {
+  font-size: 10px;
+  color: #888;
+  margin-bottom: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.scale-dots {
+  display: flex;
+  gap: 3px;
+}
+.scale-pip {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: #e0e0e0;
+}
+.scale-pip.filled-mat { background: #185FA5; }
+.scale-pip.filled-fac { background: #0F6E56; }
+.tooltip-link {
+  display: block;
+  margin-top: 8px;
+  font-size: 11px;
+  color: #185FA5;
+  text-decoration: underline;
+  word-break: break-all;
+  pointer-events: auto;
+  cursor: pointer;
+}
+.tooltip-phases {
+  margin-top: 8px;
+  border-top: 0.5px solid #eee;
+  padding-top: 8px;
+}
+.tooltip-phases-label {
+  font-size: 10px;
+  color: #888;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.phases-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.phase-tag {
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+.phase-tag.diag   { background: #FFF3CD; color: #856404; }
+.phase-tag.conc   { background: #D1ECF1; color: #0C5460; }
+.phase-tag.mise   { background: #D4EDDA; color: #155724; }
+.phase-tag.ctrl   { background: #F8D7DA; color: #721C24; }
+.phase-tag.none   { background: #f0f0f0; color: #999; font-style: italic; }
+.tool-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+.tool-link:hover { text-decoration: underline; color: #185FA5; }
+.tool-header a {
+  color: inherit;
+  text-decoration: none;
+}
+.tool-header a:hover {
+  text-decoration: underline;
+  color: #185FA5;
+}
+</style>
+</head>
+<body>
+<h1>Matrice Outils / Freins — Économie de la Fonctionnalité et de la Coopération (EFC)</h1>
+<p class="subtitle">Basée sur les fiches descriptives des 30 outils du référentiel EFC Québec. Survolez un point pour le détail · Cliquez sur un en-tête pour filtrer par outil · Cliquez sur le nom de l'outil pour accéder à la ressource.</p>
+
+<div class="filters">
+  <span class="filter-label">Catégorie :</span>
+  <button class="filter-btn active" data-cat="all">Tous</button>
+  <button class="filter-btn" data-cat="eco">Économique &amp; financier</button>
+  <button class="filter-btn" data-cat="org">Organisationnel &amp; gouvernance</button>
+  <button class="filter-btn" data-cat="info">Informationnel &amp; culturel</button>
+  <button class="filter-btn" data-cat="mar">Marché &amp; clients</button>
+  <button class="filter-btn" data-cat="jur">Juridique &amp; contractuel</button>
+  <button class="filter-btn" data-cat="tec">Technique &amp; opérationnel</button>
+  <button class="filter-btn" data-cat="str">Stratégique &amp; concurrentiel</button>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#1D9E75"></div>Outil principal</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#85B7EB"></div>Outil complémentaire</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#ddd"></div>Non pertinent</div>
+  <span class="hint">Survolez un point pour le détail · Cliquez sur un en-tête de colonne pour filtrer · Cliquez sur le nom de l'outil pour ouvrir la ressource</span>
+</div>
+
+<div class="table-wrap">
+<table id="matrix">
+<thead><tr id="header-row"><th>Frein</th></tr></thead>
+<tbody id="tbody"></tbody>
+</table>
+</div>
+<div class="summary" id="summary"></div>
+<div class="tooltip" id="tooltip">
+  <span class="tooltip-title" id="tt-title"></span>
+  <div class="tooltip-desc" id="tt-desc"></div>
+  <div class="tooltip-meta">
+    <div class="tooltip-scale">
+      <div class="tooltip-scale-label">🎓 Maturité</div>
+      <div class="scale-dots" id="tt-mat"></div>
+    </div>
+    <div class="tooltip-scale">
+      <div class="tooltip-scale-label">⚡ Facilité d'utilisation</div>
+      <div class="scale-dots" id="tt-fac"></div>
+    </div>
+  </div>
+  <span class="tooltip-role" id="tt-role"></span>
+  <div class="tooltip-phases">
+    <div class="tooltip-phases-label">📋 Phase du processus</div>
+    <div class="phases-tags" id="tt-phases"></div>
+  </div>
+  <a class="tooltip-link" id="tt-link" target="_blank" rel="noopener noreferrer"></a>
+</div>
+
+<script>
+const CAT = {
+  eco: { label: "Économique & financier", color: "#185FA5", bg: "#E6F1FB" },
+  org: { label: "Organisationnel & gouvernance", color: "#533AB7", bg: "#EEEDFE" },
+  info: { label: "Informationnel & culturel", color: "#D4537E", bg: "#FBEAF0" },
+  mar: { label: "Marché & clients", color: "#BA7517", bg: "#FAEEDA" },
+  jur: { label: "Juridique & contractuel", color: "#A32D2D", bg: "#FCEBEB" },
+  tec: { label: "Technique & opérationnel", color: "#0F6E56", bg: "#E1F5EE" },
+  str: { label: "Stratégique & concurrentiel", color: "#5F5E5A", bg: "#F1EFE8" },
+};
+
+const TOOLS = [
+  {
+    id:"lcc", short:"LCC / ACA", full:"LCC – Life Cycle Costing / ACA élargie",
+    desc:"Comptabilise l'ensemble des coûts sur le cycle de vie ; monétarise les externalités pour comparer des scénarios.",
+    maturite: 4, facilite: 2,
+    link: "https://oneclicklca.com/fr/software/design-construction/life-cycle-costing",
+    phases: ["diag","conc","mise","ctrl"]
+  },
+  {
+    id:"afm", short:"AFM", full:"Analyse des flux de matière (AFM)",
+    desc:"Quantifie les flux et stocks de matières au sein du système pour optimiser l'utilisation des ressources et réduire les déchets.",
+    maturite: 5, facilite: 2,
+    link: "https://dei.so/fr/what-are-material-flow-analysis-mfa-and-substance-flow-analysis-sfa/",
+    phases: ["diag","conc","mise","ctrl"]
+  },
+  {
+    id:"acv", short:"ACV", full:"Analyse de Cycle de Vie (ACV)",
+    desc:"Évalue les impacts environnementaux de l'extraction à la fin de vie ; outil d'aide à l'éco-conception.",
+    maturite: 5, facilite: 2,
+    link: "https://ciraig.org/index.php/fr/analyse-du-cycle-de-vie/",
+    phases: ["diag","conc","mise","ctrl"]
+  },
+  {
+    id:"app", short:"Parties prenantes", full:"Analyse des parties prenantes",
+    desc:"Comprend les intérêts et besoins des acteurs ; utile quand les parties ont des intérêts contradictoires.",
+    maturite: 5, facilite: 3,
+    link: "https://sciencespo.hal.science/hal-04842878v1",
+    phases: ["diag","conc","ctrl"]
+  },
+  {
+    id:"amcd", short:"AMCD/MCDA", full:"Analyse Multicritère d'Aide à la Décision",
+    desc:"Facilite la prise de décision dans les situations complexes avec plusieurs critères souvent contradictoires.",
+    maturite: 5, facilite: 1,
+    link: "",
+    phases: ["conc","mise","ctrl"]
+  },
+  {
+    id:"conf", short:"Conférence/Atelier", full:"Conférence / Atelier EFC",
+    desc:"Informer et permettre la mise en place de l'EFC ; sensibiliser les entreprises et acteurs aux bénéfices.",
+    maturite: 5, facilite: 5,
+    link: "",
+    phases: ["diag","conc"]
+  },
+  {
+    id:"cart", short:"Cartographie acteurs", full:"Cartographie des acteurs",
+    desc:"Identifie et hiérarchise les parties prenantes ; évalue leur influence et positionnement pour gérer les résistances.",
+    maturite: 4, facilite: 4,
+    link: "https://urbanismeparticipatif.ca/outils/cartographie-des-acteurs",
+    phases: ["diag"]
+  },
+  {
+    id:"raci", short:"Matrice RACI", full:"Matrice RACI (échelle méso/macro)",
+    desc:"Définit clairement les rôles et responsabilités pour chaque tâche ; fluidifie la communication sur les projets complexes.",
+    maturite: 4, facilite: 3,
+    link: "https://shs.cairn.info/la-boite-a-outils-de-la-conduite-du-changement--9782100776344-page-130?lang=fr",
+    phases: ["diag","conc","mise"]
+  },
+  {
+    id:"mat", short:"Grille maturité", full:"Grille de maturité",
+    desc:"Auto-évaluation pour mesurer le niveau de sophistication des processus ; diagnostique l'état actuel et définit une feuille de route.",
+    maturite: 4, facilite: 4,
+    link: "https://cdn-contenu.quebec.ca/cdn-contenu/adm/min/secretariat-du-conseil-du-tresor/sppalap/infolettre/2025/04/echelle_maturite_processus.pdf",
+    phases: ["diag"]
+  },
+  {
+    id:"bil", short:"Bilan économique", full:"Bilan économique (ADEME)",
+    desc:"Calcule l'amortissement des investissements d'une stratégie de valorisation ; évalue la faisabilité financière.",
+    maturite: 3, facilite: 3,
+    link: "https://portailcoop.hec.ca/notice?id=h%3A%3A6863d886-1481-49a9-a057-f804c64a3f1d&queryId=N-c87d5224-fa3f-4415-8c57-67dd9a4d75b4&posInSet=1",
+    phases: ["diag"]
+  },
+  {
+    id:"gefc", short:"Grille EFC", full:"Grille d'analyse comparative EFC (coût/bénéfice)",
+    desc:"Analyse le potentiel de l'EFC pour un projet : comparatif des coûts, analyse coûts-bénéfices et multicritères.",
+    maturite: 3, facilite: 3,
+    link: "https://constructioncirculaire.com/ressource/grille-danalyse-de-leconomie-de-la-fonctionnalite/",
+    phases: ["diag","conc"]
+  },
+  {
+    id:"ges", short:"Calculateur GES", full:"Calculateur de GES",
+    desc:"Calcule les gaz à effet de serre liés au transport et aux matières résiduelles.",
+    maturite: 3, facilite: 4,
+    link: "https://portailcoop.hec.ca/notice?id=h%3A%3A54bf8e1e-14bc-4bdc-a7ee-2ad0ba89061f&queryId=N-c87d5224-fa3f-4415-8c57-67dd9a4d75b4&posInSet=2",
+    phases: ["diag","ctrl"]
+  },
+  {
+    id:"mat2", short:"Calc. matières", full:"Calculateur Matières résiduelles",
+    desc:"Calcule le poids des matières résiduelles (recyclage, compost, déchets) ; améliore la gestion des déchets.",
+    maturite: 3, facilite: 3,
+    link: "https://portailcoop.hec.ca/notice?id=h::c0abacbf-67a4-4545-b0ab-f621defc56a2",
+    phases: ["diag","ctrl"]
+  },
+  {
+    id:"val", short:"Approche éco. déchets", full:"Approche économique – valorisation des déchets",
+    desc:"Calcule les retombées financières de la valorisation des déchets ; visualise les gains potentiels.",
+    maturite: 3, facilite: 3,
+    link: "https://portailcoop.hec.ca/notice?id=h%3A%3A73d58fa5-bf78-4ada-8633-f807ad48c56a&queryId=N-EXPLORE-ed9e826a-2c37-4419-bf21-86f90d6f4e83&posInSet=3",
+    phases: ["diag"]
+  },
+  {
+    id:"four", short:"Éval. fournisseurs", full:"Outils d'évaluation des fournisseurs",
+    desc:"Compile les informations sur les fournisseurs et évalue leurs impacts sur l'écoresponsabilité.",
+    maturite: 3, facilite: 3,
+    link: "https://portailcoop.hec.ca/notice?id=h%3A%3A4b7fc87a-e736-441e-b57a-6c127cae4ad8&queryId=N-EXPLORE-ed9e826a-2c37-4419-bf21-86f90d6f4e83&posInSet=4",
+    phases: ["diag","ctrl"]
+  },
+  {
+    id:"can", short:"Canevas durable", full:"Canevas du modèle d'affaires durable (EFC Québec)",
+    desc:"Identifie les nouvelles considérations pour un modèle d'affaires durable plutôt que traditionnel.",
+    maturite: 2, facilite: 4,
+    link: "https://www.efcquebec.com/wp-content/uploads/canevas-du-modele-daffaires-durable-efc-quebec.pdf",
+    phases: ["diag"]
+  },
+  {
+    id:"cef", short:"Cartographie effets", full:"Cartographie des effets (EFC Québec)",
+    desc:"Représentation graphique des effets des activités sur l'écosystème d'acteurs.",
+    maturite: 2, facilite: 5,
+    link: "https://www.efcquebec.com/wp-content/uploads/cartographie-des-effets-efc-quebec.pdf",
+    phases: ["diag"]
+  },
+  {
+    id:"jdb", short:"Journal de bord", full:"Journal de bord (accompagnateur + entreprise)",
+    desc:"Documente l'évolution de la démarche EFC ; sert d'effet miroir pour le dirigeant.",
+    maturite: 1, facilite: 5,
+    link: "https://www.efcquebec.com/wp-content/uploads/journal-de-bord-accompagnateur-efc-quebec.pdf",
+    phases: ["diag","conc","mise","ctrl"]
+  },
+  {
+    id:"fres", short:"Fresque transition", full:"Fresque de la transition économique et écologique",
+    desc:"Outil ludo-pédagogique pour acculturer à l'EFC via pédagogie inversée ; exemples concrets de transition.",
+    maturite: 4, facilite: 3,
+    link: "https://www.ieefc.eu/la-fresque-de-la-transition-economique/",
+    phases: ["diag"]
+  },
+  {
+    id:"eco", short:"Écolabel européen", full:"Écolabel européen",
+    desc:"Label officiel de la plus-value environnementale ; aide les acteurs à s'améliorer et favorise l'économie circulaire.",
+    maturite: 5, facilite: 1,
+    link: "",
+    phases: ["diag","conc","mise","ctrl"]
+  },
+  {
+    id:"kit", short:"Kit Entreprise", full:"Le Kit Entreprise (ADEME)",
+    desc:"Kit pour démarrer la transformation vers un modèle d'affaire différent (économie circulaire, EFC).",
+    maturite: 2, facilite: 5,
+    link: "https://epargnonsnosressources.gouv.fr/entreprises/boite-a-outils/le-kit-entreprise/",
+    phases: ["diag"]
+  },
+  {
+    id:"club", short:"Clubs EFC", full:"Les clubs EFC (IEEFC)",
+    desc:"Accompagnement sur 12-18 mois dans le changement de modèle d'affaire vers l'EFC ; communauté de pairs.",
+    maturite: 3, facilite: 5,
+    link: "https://www.ieefc.eu/clubs-efc/",
+    phases: ["diag","conc","mise","ctrl"]
+  },
+  {
+    id:"flux", short:"État des lieux flux", full:"État des lieux des flux entrants/sortants (Diag Éco-Flux)",
+    desc:"Identifie les sources d'économies sur énergie, matières, eau, déchets ; plan d'action chiffré personnalisé.",
+    maturite: 3, facilite: 2,
+    link: "https://diag.bpifrance.fr/diag-eco-flux",
+    phases: ["diag"]
+  },
+  {
+    id:"lise", short:"LISE (carbone)", full:"Évaluation carbone simplifiée (LISE – CCI)",
+    desc:"Mesure rapidement l'empreinte carbone des PME/TPE ; identifie des leviers et élabore un plan de décarbonation.",
+    maturite: 4, facilite: 2,
+    link: "https://www.cci.fr/offre/evaluation-carbone-simplifiee-lise-mesurez-et-reduisez-vos-emissions-de-co2",
+    phases: ["diag","conc"]
+  },
+  {
+    id:"qges", short:"QuantiGES", full:"Méthode QuantiGES (ADEME)",
+    desc:"Quantifie l'impact GES d'une action de réduction ; démarche pratique par étapes.",
+    maturite: 3, facilite: null,
+    link: "https://librairie.ademe.fr/changement-climatique/4827-methode-quantiges-9791029718236.html",
+    phases: ["diag","conc"]
+  },
+  {
+    id:"act", short:"ACT Pas à Pas", full:"Méthode ACT Pas à Pas (ADEME)",
+    desc:"Méthode structurante pour identifier un modèle économique compatible avec une trajectoire bas carbone.",
+    maturite: 4, facilite: 2,
+    link: "https://mission-transition-ecologique.beta.gouv.fr/aides-entreprise/act-pas-a-pas",
+    phases: ["diag","conc"]
+  },
+  {
+    id:"for", short:"Outils formation", full:"Outils pour formation/atelier",
+    desc:"Instruments permettant aux coopératives de faire progresser leurs stratégies circulaires.",
+    maturite: 1, facilite: 5,
+    link: "https://portailcoop.hec.ca/search/bfcf44c7-0724-4efd-8ad8-34221a1196c7/N-09820dc9-cbd2-47ce-9d28-9afd7b920b00",
+    phases: ["diag"]
+  },
+  {
+    id:"mar2", short:"Matrice MAR", full:"Matrice du modèle d'affaire responsable (Laval)",
+    desc:"Réflexion approfondie sur les défis du développement durable ; intègre ces défis dans les modèles d'affaires.",
+    maturite: 2, facilite: 5,
+    link: "https://portailcoop.hec.ca/in/documentViewer.xhtml?v=2.1.196&id=de102822-f9f9-4789-a78b-f253e2b8f4ce&highlight=profile%3Aaa64feff-51e9-47a7-af49-c47b7dfdb946&file=/in/rest/annotationSVC/DownloadWatermarkedAttachment/attach_upload_4b53711f-b594-497d-8036-d6fd9491441c%3F_%3Dmodele-daffaires-responsable-instructions.pdf&locale=fr&multi=false",
+    phases: ["diag","ctrl"]
+  },
+  {
+    id:"bio", short:"Biomimicards", full:"Biomimicards (Circulab)",
+    desc:"Favorise la collaboration et l'innovation ; inspire de nouvelles façons de concevoir produits/services depuis la nature.",
+    maturite: 2, facilite: 5,
+    link: "https://circulab.academy/outils-economie-circulaire/biomimicards-biomimetisme/",
+    phases: ["diag"]
+  },
+  {
+    id:"dt", short:"Design thinking", full:"Design thinking (IDEO)",
+    desc:"Repenser les offres centrées usage ; approche itérative d'innovation centrée sur l'utilisateur.",
+    maturite: 5, facilite: 1,
+    link: "",
+    phases: ["diag","conc"]
+  },
+];
+
+const DATA = [
+["eco","Bouleversement du modèle de revenus",        2,0,0,1,1,0,1,0,1,1,2,0,0,0,0,2,1,1,0,0,1,1,0,0,0,1,0,2,0,1],
+["eco","Investissements initiaux élevés",             2,0,0,0,1,0,0,0,0,2,1,0,0,0,0,1,1,1,0,0,1,1,1,0,0,1,0,1,0,0],
+["eco","Difficulté d'accès au financement",           2,0,0,1,1,0,0,0,0,2,1,0,0,0,0,1,1,1,0,0,1,1,1,0,0,1,0,1,0,0],
+["eco","Incertitude sur la rentabilité",              2,0,0,0,2,0,0,0,1,2,2,0,0,1,0,1,1,1,0,0,1,1,0,0,0,1,0,1,0,0],
+["eco","Coûts de maintenance et de gestion",         2,1,0,0,1,0,0,0,0,1,2,0,0,0,0,1,1,1,0,0,0,0,1,0,0,0,0,1,0,0],
+["eco","Immobilisation financière importante",        2,0,0,0,1,0,0,0,0,2,2,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,1,0,0],
+["eco","Forte intensité capitalistique",              2,0,0,0,1,0,0,0,0,2,2,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,1,0,0],
+["eco","Arbitrage budgétaire défavorable",            2,0,0,1,2,0,0,0,1,2,1,0,0,0,0,1,1,1,0,0,1,0,0,0,0,1,0,1,0,0],
+["eco","Dépendance aux financements publics",         2,0,0,1,1,0,0,0,0,2,1,0,0,0,0,1,1,1,0,0,1,1,1,0,0,1,0,1,0,0],
+["eco","Faible valorisation économique des déchets",  1,2,1,0,1,0,0,0,0,1,1,1,1,2,1,1,1,0,0,0,0,0,2,0,1,0,0,0,0,0],
+["org","Résistance au changement interne",            0,0,0,2,0,2,1,1,2,0,0,0,0,0,0,1,1,2,2,0,1,2,0,0,0,0,1,1,1,1],
+["org","Silos organisationnels",                      0,0,0,1,0,2,1,2,1,0,0,0,0,0,0,1,1,1,1,0,1,2,0,0,0,0,1,1,0,0],
+["org","Transformation organisationnelle",            0,0,0,2,1,2,1,2,2,0,1,0,0,0,0,2,1,2,1,0,1,2,0,0,0,1,1,2,0,1],
+["org","Complexité organisationnelle",                0,0,0,1,1,1,1,2,2,0,0,0,0,0,0,1,1,1,0,0,1,1,0,0,0,0,0,1,0,0],
+["org","Divergence d'objectifs",                      0,0,0,2,2,1,2,1,1,0,1,0,0,0,0,1,2,1,0,0,1,1,0,0,0,0,0,1,0,0],
+["org","Manque de temps dédié",                       0,0,0,0,0,1,0,1,1,0,0,0,0,0,0,0,0,2,0,0,0,1,0,0,0,0,1,0,0,0],
+["org","Complexité de coordination entre acteurs",    0,0,0,2,1,2,2,2,1,0,0,0,0,0,0,1,2,1,0,0,1,2,0,0,0,0,1,1,0,0],
+["org","Manque de communication",                     0,0,0,1,0,2,1,1,0,0,0,0,0,0,0,0,1,1,2,0,0,1,0,0,0,0,1,0,0,0],
+["org","Conflits d'intérêts",                         0,0,0,2,1,1,2,1,0,0,0,0,0,0,0,0,2,1,0,0,0,1,0,0,0,0,0,0,0,0],
+["info","Culture de la propriété",                    0,0,0,0,0,2,1,0,1,0,2,0,0,0,0,1,1,1,2,0,1,2,0,0,0,0,1,1,0,1],
+["info","Habitudes d'achat ancrées",                  0,0,0,0,0,2,1,0,1,0,2,0,0,0,0,1,1,1,2,0,1,2,0,0,0,0,1,1,0,2],
+["info","Manque de sensibilisation",                  0,0,0,1,0,2,1,0,1,0,1,0,0,0,0,1,1,1,2,0,1,2,0,0,0,0,2,1,1,0],
+["info","Faible culture de la coopération",           0,0,0,2,0,2,2,0,1,0,1,0,0,0,0,1,1,1,2,0,1,2,0,0,0,0,1,1,1,0],
+["info","Peur du risque / culture de l'échec",        0,0,0,1,0,2,1,0,2,0,1,0,0,0,0,1,1,1,2,0,1,2,0,0,0,0,1,1,0,0],
+["info","Logique court terme",                        2,0,1,1,1,1,1,0,1,1,2,1,0,0,0,1,2,1,2,0,1,1,0,1,1,2,0,1,0,0],
+["mar","Difficulté à mesurer le ROI",                 2,0,0,0,1,0,0,0,1,2,2,0,0,0,0,1,2,1,0,0,1,0,0,0,0,0,0,1,0,0],
+["mar","Méfiance des clients",                        0,0,0,1,0,1,1,0,1,0,1,0,0,0,0,1,2,1,1,1,1,2,0,0,0,0,1,1,0,0],
+["mar","Complexité de la tarification",               2,0,0,0,1,0,0,0,0,2,2,0,0,1,0,2,1,1,0,0,0,0,0,0,0,0,0,1,0,0],
+["mar","Risque de dépendance fournisseur",             1,0,0,2,1,0,1,1,0,0,1,0,0,0,2,1,2,0,0,0,0,1,0,0,0,0,0,1,0,0],
+["mar","Difficulté à percevoir la valeur globale",    2,1,1,1,1,1,1,0,1,1,2,1,0,0,0,2,2,1,1,1,1,1,0,1,1,1,0,2,0,1],
+["mar","Faible visibilité auprès des clients",        0,0,0,1,0,1,1,0,0,1,1,0,0,0,0,1,2,1,0,1,1,1,0,0,0,0,0,1,0,0],
+["mar","Résistance au changement des clients",        0,0,0,1,0,2,1,0,1,0,1,0,0,0,0,1,2,1,2,1,1,2,0,0,0,0,1,1,0,2],
+["jur","Cadre juridique flou",                        0,0,0,1,0,1,0,0,0,0,1,0,0,0,0,1,1,1,0,0,0,1,0,0,0,0,0,0,0,0],
+["jur","Responsabilités élargies",                    0,0,0,1,0,1,0,2,0,0,2,0,0,0,0,1,1,1,0,0,0,1,0,0,0,0,0,1,0,0],
+["jur","Propriété des données",                       0,0,0,0,0,0,0,1,0,0,1,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+["jur","Complexité réglementaire",                    0,0,0,1,0,1,0,1,0,0,1,0,0,0,0,0,1,1,0,0,0,1,0,0,0,0,0,0,0,0],
+["jur","Contraintes réglementaires sectorielles",     0,0,0,1,0,1,0,1,0,0,1,0,0,0,0,0,1,1,0,1,0,1,0,0,0,0,0,0,0,0],
+["jur","Traçabilité des usages",                      0,1,0,0,0,0,0,1,0,0,1,1,1,0,1,0,1,2,0,0,0,0,0,0,0,0,0,0,0,0],
+["tec","Logistique inverse",                          1,2,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,0,0,0,0,2,0,0,0,0,0,0,0],
+["tec","Éco-conception",                              1,1,2,0,0,0,0,0,0,0,1,1,0,0,1,1,0,0,0,1,0,0,1,1,1,0,0,0,1,1],
+["tec","Besoin de maintenance",                       2,0,0,0,0,0,0,0,0,1,2,0,0,0,0,1,1,1,0,0,0,0,1,0,0,0,0,0,0,0],
+["tec","Technologie immature",                        0,0,0,0,1,1,0,0,1,1,1,0,0,0,0,1,1,1,0,0,0,1,0,0,0,0,0,1,0,1],
+["tec","Manque de filières locales structurées",      0,1,0,2,1,1,2,0,0,1,1,0,0,1,0,1,2,1,0,0,0,1,1,0,0,0,0,1,0,0],
+["tec","Capacité limitée avant modernisation",        1,1,0,0,1,0,0,0,1,1,1,0,0,0,0,1,1,1,0,0,0,1,1,0,0,0,0,1,0,0],
+["tec","Dépendance aux matières premières importées", 1,2,1,1,1,0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0,2,0,1,0,0,0,0,0],
+["str","Cannibalisation des ventes",                  2,0,0,0,2,0,0,0,1,1,2,0,0,0,0,2,2,1,0,0,0,0,0,0,0,1,0,2,0,1],
+["str","Pression concurrentielle",                    1,0,1,0,2,0,0,0,1,1,2,1,0,0,1,2,2,1,0,1,0,0,0,1,1,1,0,2,0,1],
+["str","Temps de transition long",                    1,0,0,1,1,1,1,1,2,1,1,0,0,0,0,1,1,2,0,0,1,2,0,0,0,1,1,1,0,0],
+["str","Dépendance aux partenaires",                  0,0,0,2,1,1,2,1,0,0,1,0,0,0,1,1,2,1,0,0,1,2,0,0,0,0,0,1,0,0],
+["str","Dépendance à l'écosystème territorial",       0,1,0,2,1,1,2,1,0,1,1,0,0,0,0,1,2,1,0,0,0,2,1,0,0,0,0,1,0,0],
+];
+
+let currentCat = "all";
+let highlightedTool = null;
+
+function buildScalePips(container, value, filledClass, max) {
+  container.innerHTML = "";
+  if (value === null || value === undefined) {
+    container.innerHTML = '<span style="font-size:10px;color:#bbb">N/A</span>';
+    return;
+  }
+  for (let i = 1; i <= max; i++) {
+    const pip = document.createElement("div");
+    pip.className = "scale-pip" + (i <= value ? " " + filledClass : "");
+    container.appendChild(pip);
+  }
+}
+
+function buildHeader() {
+  const tr = document.getElementById("header-row");
+  TOOLS.forEach((t, i) => {
+    const th = document.createElement("th");
+    th.className = "tool-header";
+    th.dataset.idx = i;
+
+    if (t.link) {
+      th.innerHTML = `<a href="${t.link}" target="_blank" rel="noopener noreferrer" title="${t.full}">${t.short}</a>`;
+      // Prevent link click from triggering column filter
+      th.querySelector("a").addEventListener("click", e => e.stopPropagation());
+    } else {
+      th.textContent = t.short;
+      th.title = t.full;
+    }
+
+    th.addEventListener("click", () => {
+      if (highlightedTool === i) {
+        highlightedTool = null;
+        document.querySelectorAll(".tool-header").forEach(h => h.classList.remove("highlighted"));
+      } else {
+        highlightedTool = i;
+        document.querySelectorAll(".tool-header").forEach(h => h.classList.remove("highlighted"));
+        th.classList.add("highlighted");
+      }
+      renderTable();
+    });
+    tr.appendChild(th);
+  });
+}
+
+function renderTable() {
+  const tbody = document.getElementById("tbody");
+  tbody.innerHTML = "";
+  let visible = 0;
+  DATA.forEach(row => {
+    const [cat, frein, ...scores] = row;
+    const catMatch = currentCat === "all" || currentCat === cat;
+    const toolMatch = highlightedTool === null || scores[highlightedTool] > 0;
+    const show = catMatch && toolMatch;
+    const tr = document.createElement("tr");
+    if (!show) { tr.classList.add("hidden"); } else { visible++; }
+    const c = CAT[cat];
+    let html = `<td class="frein-cell"><span class="cat-badge" style="background:${c.bg};color:${c.color}">${c.label}</span><br>${frein}</td>`;
+    scores.forEach((s, i) => {
+      let cell = "";
+      if (s === 2) cell = `<div class="dot p" data-i="${i}" data-s="2"></div>`;
+      else if (s === 1) cell = `<div class="dot s" data-i="${i}" data-s="1"></div>`;
+      else cell = `<div class="empty"></div>`;
+      html += `<td class="dot-cell">${cell}</td>`;
+    });
+    tr.innerHTML = html;
+    tbody.appendChild(tr);
+  });
+  const s = document.getElementById("summary");
+  let txt = `${visible} frein${visible>1?"s":""} affiché${visible>1?"s":""}`;
+  if (highlightedTool !== null) txt += ` · Filtre outil : ${TOOLS[highlightedTool].short}`;
+  s.textContent = txt;
+}
+
+const tooltip = document.getElementById("tooltip");
+const ttTitle = document.getElementById("tt-title");
+const ttDesc = document.getElementById("tt-desc");
+const ttRole = document.getElementById("tt-role");
+const ttLink = document.getElementById("tt-link");
+const ttMat = document.getElementById("tt-mat");
+const ttFac = document.getElementById("tt-fac");
+const ttPhases = document.getElementById("tt-phases");
+
+const PHASE_LABELS = {
+  diag: { label: "Diagnostic", cls: "diag" },
+  conc: { label: "Conception", cls: "conc" },
+  mise: { label: "Mise en œuvre", cls: "mise" },
+  ctrl: { label: "Contrôle/Suivi", cls: "ctrl" },
+};
+
+document.getElementById("matrix").addEventListener("mouseover", e => {
+  const dot = e.target.closest(".dot");
+  if (!dot) { tooltip.style.display = "none"; return; }
+  const idx = parseInt(dot.dataset.i);
+  const s = parseInt(dot.dataset.s);
+  const t = TOOLS[idx];
+  const role = s === 2 ? "🟢 Outil principal" : "🔵 Outil complémentaire";
+
+  ttTitle.textContent = t.full;
+  ttDesc.textContent = t.desc;
+  ttRole.textContent = role;
+
+  buildScalePips(ttMat, t.maturite, "filled-mat", 5);
+  buildScalePips(ttFac, t.facilite, "filled-fac", 5);
+
+  // Phases
+  ttPhases.innerHTML = "";
+  if (t.phases && t.phases.length > 0) {
+    t.phases.forEach(p => {
+      const ph = PHASE_LABELS[p];
+      if (ph) {
+        const tag = document.createElement("span");
+        tag.className = `phase-tag ${ph.cls}`;
+        tag.textContent = ph.label;
+        ttPhases.appendChild(tag);
+      }
+    });
+  } else {
+    const tag = document.createElement("span");
+    tag.className = "phase-tag none";
+    tag.textContent = "Non spécifié";
+    ttPhases.appendChild(tag);
+  }
+
+  if (t.link) {
+    ttLink.href = t.link;
+    ttLink.textContent = "→ Accéder à la ressource";
+    ttLink.style.display = "block";
+  } else {
+    ttLink.style.display = "none";
+  }
+
+  tooltip.style.display = "block";
+});
+
+document.getElementById("matrix").addEventListener("mousemove", e => {
+  let x = e.clientX + 16, y = e.clientY - 10;
+  if (x + 340 > window.innerWidth) x = e.clientX - 345;
+  if (y + tooltip.offsetHeight > window.innerHeight) y = e.clientY - tooltip.offsetHeight - 10;
+  tooltip.style.left = x + "px";
+  tooltip.style.top = y + "px";
+});
+
+document.getElementById("matrix").addEventListener("mouseleave", () => { tooltip.style.display = "none"; });
+
+// Allow clicking on tooltip link
+tooltip.addEventListener("mouseenter", () => { tooltip.style.display = "block"; });
+tooltip.addEventListener("mouseleave", () => { tooltip.style.display = "none"; });
+
+document.querySelector(".filters").addEventListener("click", e => {
+  const btn = e.target.closest(".filter-btn");
+  if (!btn) return;
+  document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  currentCat = btn.dataset.cat;
+  renderTable();
+});
+
+buildHeader();
+renderTable();
+</script>
+</body>
+</html>
